@@ -1,0 +1,91 @@
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="QuizApp.QuizPage">
+
+
+    <Grid x:Name="RootLayout" BackgroundColor="{AppThemeBinding Dark={StaticResource Gray900}}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Шапка -->
+        <Grid ColumnDefinitions="Auto,*,Auto" Padding="0,4" Grid.Row="0">
+            <Label Text="" Grid.Column="0" />
+            <Label Text="Викторина" FontSize="18" FontAttributes="Bold" HorizontalOptions="Center" VerticalOptions="Center" Grid.Column="1" />
+            <Button Text="Меню" Clicked="OnBackToMenuClicked" CornerRadius="10" WidthRequest="90" HeightRequest="36" Grid.Column="2" TextColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource PrimaryDarkText}}"/>
+        </Grid>
+
+        <!-- Основной контент -->
+        <VerticalStackLayout Spacing="14" Padding="16" Grid.Row="1">
+        <!-- Жизни и подсказки -->
+        <Grid Padding="0,6">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <HorizontalStackLayout x:Name="HeartsLayout" Spacing="6" HorizontalOptions="Start" VerticalOptions="Center" Grid.Column="0"></HorizontalStackLayout>
+
+            <StackLayout Grid.Column="1" HorizontalOptions="Center" VerticalOptions="Center"></StackLayout>
+
+            <HorizontalStackLayout HorizontalOptions="End" Spacing="8" Grid.Column="2">
+                <Button x:Name="FiftyButton" Text="50/50" Clicked="OnFiftyClicked" WidthRequest="100" />
+                <Button x:Name="SkipButton" Text="Пропуск" Clicked="OnSkipClicked" WidthRequest="100" />
+            </HorizontalStackLayout>
+        </Grid>
+
+        <!-- Картинка для вопроса -->
+        <Frame CornerRadius="12" HasShadow="True"  BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Gray950}}">
+            <Grid  HeightRequest="220" HorizontalOptions="Center">
+                <Frame CornerRadius="8" IsClippedToBounds="True" Padding="0" HasShadow="False" BackgroundColor="Transparent" HorizontalOptions="Center" VerticalOptions="Center" WidthRequest="300" HeightRequest="200">
+                    <Image x:Name="QuestionImage" Aspect="AspectFill" IsVisible="False" HorizontalOptions="Fill" VerticalOptions="Fill" WidthRequest="300" HeightRequest="200">
+                        <Image.Clip>
+                            <RoundRectangleGeometry Rect="0,0,300,200" CornerRadius="20" />
+                        </Image.Clip>
+                    </Image>
+                </Frame>
+                <Label x:Name="ImagePlaceholder" Text="" HorizontalOptions="Center" VerticalOptions="Center" TextColor="{StaticResource Gray500}" FontSize="16" IsVisible="False" />
+            </Grid>
+        </Frame>
+
+        <!-- Таймер и счёт -->
+        <VerticalStackLayout Spacing="6" HorizontalOptions="Center" VerticalOptions="Center">
+            <ProgressBar x:Name="TimerProgress" Progress="1" HeightRequest="6" WidthRequest="220" BackgroundColor="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray600}}" ProgressColor="{StaticResource Primary}" />
+            <Label x:Name="TimerLabel" Text="15s" FontSize="12" TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}" HorizontalOptions="Center" />
+            <Label x:Name="ScoreLabel" Text="Очки: 0" FontSize="14" HorizontalOptions="Center" TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource White}}" />
+        </VerticalStackLayout>
+
+        <!-- Текст вопроса -->
+        <Frame BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Gray950}}" CornerRadius="12" Padding="12" HasShadow="True">
+            <Label x:Name="QuestionLabel" Text="Вопрос появится здесь" FontSize="20" HorizontalOptions="Center" HorizontalTextAlignment="Center" TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource White}}" />
+        </Frame>
+
+        <!-- Варианты ответов -->
+        <VerticalStackLayout Spacing="10" HorizontalOptions="Fill" MaximumWidthRequest="340">
+
+            <Button x:Name="Btn0" StyleId="0" Clicked="OnAnswerClicked" />
+            <Button x:Name="Btn1" StyleId="1" Clicked="OnAnswerClicked"  />
+            <Button x:Name="Btn2" StyleId="2" Clicked="OnAnswerClicked"  />
+            <Button x:Name="Btn3" StyleId="3" Clicked="OnAnswerClicked"  />
+
+        </VerticalStackLayout>
+
+        <!-- Прогресс -->
+        <Label x:Name="ProgressLabel" Text="0/0" HorizontalOptions="Center" TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}" />
+
+        <!-- Кнопка перехода к следующему вопросу -->
+        <Button x:Name="NextBtn" Text="Следующий вопрос" Clicked="OnNextClicked" HorizontalOptions="Fill" MaximumWidthRequest="340"
+            IsVisible="False" IsEnabled="False" BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" TextColor="{StaticResource White}" FontSize="16" CornerRadius="12" Margin="0,12,0,0" />
+        </VerticalStackLayout>
+
+        <!-- Перехватывающий слой для блокировки ввода (показывается при проигрыше) -->
+        <BoxView x:Name="InputBlocker" Grid.Row="1" BackgroundColor="Transparent" IsVisible="False" InputTransparent="True">
+            <BoxView.GestureRecognizers>
+                <TapGestureRecognizer Tapped="OnInputBlockerTapped" NumberOfTapsRequired="1" />
+            </BoxView.GestureRecognizers>
+        </BoxView>
+    </Grid>
+
+</ContentPage>

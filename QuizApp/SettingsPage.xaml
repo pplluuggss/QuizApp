@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="QuizApp.SettingsPage"
+             Title="Настройки">
+
+    <Grid Padding="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Иконка назад -->
+        <Frame BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" CornerRadius="22" WidthRequest="44" HeightRequest="44" Padding="8" HorizontalOptions="End" VerticalOptions="Start">
+            <Path Data="M14 18 L8 12 L14 6"
+                  Stroke="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource PrimaryDarkText}}"
+                  StrokeThickness="2"
+                  StrokeLineCap="Round"
+                  StrokeLineJoin="Round"
+                  WidthRequest="20" HeightRequest="20"
+                  HorizontalOptions="Center" VerticalOptions="Center"  />
+            <Frame.GestureRecognizers>
+                <TapGestureRecognizer Tapped="OnBackClicked" NumberOfTapsRequired="1" />
+            </Frame.GestureRecognizers>
+        </Frame>
+
+        <VerticalStackLayout Grid.Row="1" Spacing="12" HorizontalOptions="Center" VerticalOptions="Center">
+            <Label Text="Настройки" FontSize="36" FontAttributes="Bold" HorizontalOptions="Center" />
+            <StackLayout HorizontalOptions="Center" VerticalOptions="Center" Spacing="12">
+                <Label Text="Тема" HorizontalOptions="Center" />
+                <Button x:Name="ThemeBtn" Text="Сменить тему" Clicked="OnThemeToggle" />
+            </StackLayout>
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>

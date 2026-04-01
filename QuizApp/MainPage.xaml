@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="QuizApp.MainPage">
+
+    <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="20">
+        <Label Text="ВИКТОРИНА" FontSize="36" FontAttributes="Bold" HorizontalOptions="Center" />
+
+        <Button Text="НАЧАТЬ" 
+            TextColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource PrimaryDarkText}}"
+            FontSize="20" 
+            WidthRequest="200" 
+            HeightRequest="60"
+            Clicked="OnStartClicked" />
+        <Button Text="НАСТРОЙКИ"
+            TextColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource PrimaryDarkText}}"
+            FontSize="16"
+            WidthRequest="200"
+            HeightRequest="50"
+            Clicked="OnSettingsClicked" />
+
+
+        <Button Text="ВЫЙТИ" 
+                TextColor="White"
+                BackgroundColor="{StaticResource HeartColor}"
+            FontSize="16" 
+            WidthRequest="200" 
+            HeightRequest="50"
+            Clicked="OnExitClicked" />
+
+
+    </VerticalStackLayout>
+
+
+</ContentPage>

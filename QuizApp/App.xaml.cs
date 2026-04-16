@@ -5,9 +5,23 @@ namespace QuizApp
 {
     public partial class App : Application
     {
+        private string _startupCrashText;
+
         public App()
         {
             InitializeComponent();
+
+            // Если есть файл crash.log от предыдущего запуска — прочитаем и удалим его, потом покажем в CreateWindow
+            try
+            {
+                var path = System.IO.Path.Combine(FileSystem.AppDataDirectory, "crash.log");
+                if (System.IO.File.Exists(path))
+                {
+                    _startupCrashText = System.IO.File.ReadAllText(path);
+                    try { System.IO.File.Delete(path); } catch { }
+                }
+            }
+            catch { }
             // Применяем сохранённую тему пользователя (если есть)
             try
             {
@@ -42,7 +56,23 @@ namespace QuizApp
 
         protected override Window CreateWindow(IActivationState? activationState)
         {
-            return new Window(new NavigationPage(new MainPage()));
+            var window = new Window(new NavigationPage(new MainPage()));
+
+            if (!string.IsNullOrEmpty(_startupCrashText))
+            {
+                // Показываем короткую часть лога, чтобы не перегружать UI
+                var text = _startupCrashText.Length > 2000 ? _startupCrashText.Substring(0, 2000) : _startupCrashText;
+                window.Page.Dispatcher.Dispatch(async () =>
+                {
+                    try
+                    {
+                        await window.Page.DisplayAlert("Предыдущее падение", text, "OK");
+                    }
+                    catch { }
+                });
+            }
+
+            return window;
         }
     }
 }

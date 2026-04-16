@@ -9,11 +9,15 @@ using System.Diagnostics;
 using QuizApp.Models;
 using QuizApp.Services;
 using Microsoft.Maui.Storage;
+using System.IO;
 
 namespace QuizApp;
 
 public partial class QuizPage : ContentPage
 {
+    // Минимальный встроенный образец (1x1 PNG) в байтах — используется для создания тестовых файлов
+    private static readonly byte[] sampleImageBytes = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAAWgmWQ0AAAAASUVORK5CYII=");
+
     private List<Question> _questions; // Список вопросов для выбранной темы
     private int _currentIndex = 0;      // Номер текущего вопроса
     private int _score = 0;             // Счетчик очков
@@ -35,6 +39,9 @@ public partial class QuizPage : ContentPage
             DisplayAlertAsync("Нет вопросов", "В выбранной категории нет вопросов.", "ОК");
             return;
         }
+
+        // Создаём примеры изображений в локальном хранилище, чтобы на устройстве были видны картинки
+        try { _ = System.Threading.Tasks.Task.Run(() => EnsureSampleImages()); } catch { }
         DisplayQuestion();
     }
     // Выбор цвета в зависимости от темы
@@ -79,6 +86,15 @@ public partial class QuizPage : ContentPage
     {
         var q = _questions[_currentIndex];
         QuestionLabel.Text = q.Text;
+        // Покажем имя файла изображения для быстрой отладки (пока загружается реальная картинка)
+        try
+        {
+            ImagePlaceholder.Text = q.ImageFile ?? "(no image)";
+            ImagePlaceholder.IsVisible = true;
+            QuestionImage.IsVisible = false;
+            Debug.WriteLine($"[QuizPage] Displaying question {_currentIndex + 1}/{_questions.Count}, imageFile='{q.ImageFile}'");
+        }
+        catch { }
         // Попытка загрузить картинку
         if (!string.IsNullOrEmpty(q.ImageFile))
         {
@@ -86,28 +102,59 @@ public partial class QuizPage : ContentPage
             try
             {
                 var tryNames = new List<string>();
-                // если имя содержит расширение — сначала пробуем его как есть
-                if (System.IO.Path.HasExtension(q.ImageFile))
+                // Построим варианты имён: если указано расширение — попробуем его и другие форматы (на случай, если файл создан с другим расширением)
+                var baseName = System.IO.Path.GetFileNameWithoutExtension(q.ImageFile);
+                var originalExt = System.IO.Path.GetExtension(q.ImageFile);
+                var commonExts = new[] { ".png", ".jpg", ".jpeg", ".webp" };
+                if (!string.IsNullOrEmpty(originalExt))
                 {
+                    // сначала добавляем вариант как в данных
                     tryNames.Add(q.ImageFile);
+                    // затем добавляем те же имена с другими расширениями
+                    foreach (var ext in commonExts)
+                    {
+                        var candidate = baseName + ext;
+                        if (!tryNames.Contains(candidate, StringComparer.OrdinalIgnoreCase))
+                            tryNames.Add(candidate);
+                    }
                 }
                 else
                 {
-                    // пробуем несколько популярных расширений
-                    tryNames.Add(q.ImageFile + ".png");
-                    tryNames.Add(q.ImageFile + ".jpg");
-                    tryNames.Add(q.ImageFile + ".jpeg");
-                    tryNames.Add(q.ImageFile + ".webp");
+                    // если расширения нет — пробуем все популярные
+                    foreach (var ext in commonExts)
+                        tryNames.Add(q.ImageFile + ext);
                 }
 
-                foreach (var name in tryNames)
+                // Также пробуем варианты с путями, где обычно лежат ресурсы в MAUI
+                var expanded = tryNames.SelectMany(n => new[] { n, System.IO.Path.Combine("Images", n), System.IO.Path.Combine("Resources", "Images", n) }).ToList();
+                Debug.WriteLine($"[QuizPage] Trying image names: {string.Join(",", expanded)}");
+
+                foreach (var name in expanded)
                 {
                     try
                     {
+                        // Сначала пробуем локальную копию в AppDataDirectory/Images
+                        var fileNameOnly = System.IO.Path.GetFileName(name);
+                        var localPath = Path.Combine(FileSystem.AppDataDirectory, "Images", fileNameOnly);
+                        if (File.Exists(localPath))
+                        {
+                            Debug.WriteLine($"[QuizPage] Found local image: {localPath}");
+                            QuestionImage.Source = Microsoft.Maui.Controls.ImageSource.FromFile(localPath);
+                            QuestionImage.IsVisible = true;
+                            ImagePlaceholder.IsVisible = false;
+                            loaded = true;
+                            break;
+                        }
+
+                        // Затем пробуем открыть ресурс пакета
                         using var stream = await FileSystem.OpenAppPackageFileAsync(name);
                         if (stream != null)
                         {
-                            QuestionImage.Source = Microsoft.Maui.Controls.ImageSource.FromFile(name);
+                            // Скопируем поток пакета в MemoryStream и используем FromStream — надежно работает на Android/iOS
+                            var ms = new MemoryStream();
+                            await stream.CopyToAsync(ms);
+                            ms.Position = 0;
+                            QuestionImage.Source = Microsoft.Maui.Controls.ImageSource.FromStream(() => ms);
                             QuestionImage.IsVisible = true;
                             ImagePlaceholder.IsVisible = false;
                             loaded = true;
@@ -122,25 +169,54 @@ public partial class QuizPage : ContentPage
 
                 if (!loaded)
                 {
-                    QuestionImage.Source = null;
-                    QuestionImage.IsVisible = false;
-                    ImagePlaceholder.Text = "Картинка недоступна";
-                    ImagePlaceholder.IsVisible = true;
+                    // Если реальные изображения не найдены/не упакованы, показываем цветной фон по категории
+                    try
+                    {
+                        var categoryKey = q.Category?.ToLower() ?? "default";
+                        Color bg = categoryKey switch
+                        {
+                            var s when s.StartsWith("movies") => Colors.MediumPurple,
+                            var s when s.StartsWith("series") => Colors.MediumSlateBlue,
+                            var s when s.StartsWith("cartoons") => Colors.Orange,
+                            var s when s.StartsWith("animals") => Colors.LightGreen,
+                            var s when s.StartsWith("nature") => Colors.SeaGreen,
+                            var s when s.StartsWith("geo") => Colors.Teal,
+                            var s when s.StartsWith("history") => Colors.SandyBrown,
+                            var s when s.StartsWith("documentaries") => Colors.SlateGray,
+                            _ => Colors.LightGray
+                        };
+
+                        QuestionImage.Source = null;
+                        QuestionImage.BackgroundColor = bg;
+                        QuestionImage.IsVisible = true;
+                        ImagePlaceholder.Text = $"Нет изображения — категория: {q.Category}";
+                        ImagePlaceholder.IsVisible = true;
+                    }
+                    catch
+                    {
+                        QuestionImage.Source = GetPlaceholderImageSource();
+                        QuestionImage.IsVisible = true;
+                        ImagePlaceholder.Text = $"Не найдено: {q.ImageFile}";
+                        ImagePlaceholder.IsVisible = true;
+                    }
+                    Debug.WriteLine($"[QuizPage] Image not found for {q.ImageFile}. Tried: {string.Join(",", expanded)}");
                 }
             }
             catch
             {
-                QuestionImage.Source = null;
-                QuestionImage.IsVisible = false;
-                ImagePlaceholder.Text = "Картинка недоступна";
+                QuestionImage.Source = GetPlaceholderImageSource();
+                QuestionImage.IsVisible = true;
+                ImagePlaceholder.Text = $"Ошибка при загрузке: {q.ImageFile}";
                 ImagePlaceholder.IsVisible = true;
+                Debug.WriteLine($"[QuizPage] Exception loading image for {q.ImageFile}");
             }
         }
         else
         {
-            QuestionImage.Source = null;
-            QuestionImage.IsVisible = false;
-            ImagePlaceholder.Text = "Без изображения";
+            // Нет имени файла у вопроса — показываем плейсхолдер и текст
+            QuestionImage.Source = GetPlaceholderImageSource();
+            QuestionImage.IsVisible = true;
+            ImagePlaceholder.Text = "Без изображения для этого вопроса";
             ImagePlaceholder.IsVisible = true;
         }
 
@@ -191,6 +267,73 @@ public partial class QuizPage : ContentPage
         {
             await btn.ScaleTo(1.0, 80);
         }
+    }
+
+    // Небольшой встроенный плейсхолдер (1x1 PNG, серый) для показа, если реальных картинок нет
+    private static ImageSource GetPlaceholderImageSource()
+    {
+        try
+        {
+            const string b64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAAWgmWQ0AAAAASUVORK5CYII=";
+            var bytes = Convert.FromBase64String(b64);
+            return Microsoft.Maui.Controls.ImageSource.FromStream(() => new MemoryStream(bytes));
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    // Создаём простые примерные изображения (мини PNG) для категорий в AppDataDirectory/Images
+    private void EnsureSampleImages()
+    {
+        try
+        {
+            var dir = Path.Combine(FileSystem.AppDataDirectory, "Images");
+            Directory.CreateDirectory(dir);
+
+            // Получим список категорий и количество вопросов в каждой, чтобы создать соответствующие файлы .jpg
+            try
+            {
+                var all = QuizApp.Services.QuizService.GetQuestions();
+                var counters = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                foreach (var q in all)
+                {
+                    var cat = (q.Category ?? "default").ToLower();
+                    if (!counters.ContainsKey(cat)) counters[cat] = 0;
+                    counters[cat] = counters[cat] + 1;
+                }
+
+                foreach (var kv in counters)
+                {
+                    var cat = kv.Key;
+                    var count = kv.Value;
+                    for (int i = 1; i <= count; i++)
+                    {
+                        var fileName = $"{cat}_{i}.jpg";
+                        var path = Path.Combine(dir, fileName);
+                        if (!File.Exists(path))
+                        {
+                            try { File.WriteAllBytes(path, sampleImageBytes); } catch { }
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // fallback: создадим несколько общих jpg
+                var sampleNames = new[] { "movies_1.jpg", "series_1.jpg", "cartoons_1.jpg", "animals_1.jpg", "nature_plants_1.jpg", "nature_ecology_1.jpg" };
+                foreach (var name in sampleNames)
+                {
+                    var path = Path.Combine(dir, name);
+                    if (!File.Exists(path))
+                    {
+                        try { File.WriteAllBytes(path, sampleImageBytes); } catch { }
+                    }
+                }
+            }
+        }
+        catch { }
     }
     // Возврат в меню
     private async void OnBackToMenuClicked(object sender, EventArgs e)

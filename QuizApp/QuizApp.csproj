@@ -54,10 +54,10 @@
 		<!-- Splash Screen -->
 		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
 
-     <!-- Images: include as raw assets to avoid Resizetizer filename restrictions -->
-		<!-- MauiImage enforces Resizetizer rules (lowercase, start/end with letter). If you have many files
-			 that don't conform, include them as MauiAsset instead and update references if needed. -->
-		<MauiAsset Include="Resources\Images\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+    <!-- Images: include as MauiImage so MAUI registers them as bundled images.
+		 Filenames must be lowercase and valid for Resizetizer (start and end with a letter).
+		 If you intentionally used MauiAsset before, change back only after updating code. -->
+	<MauiImage Include="Resources\Images\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
 		
 		<!-- Custom Fonts -->
 		<MauiFont Include="Resources\Fonts\*" />

@@ -210,7 +210,8 @@ namespace QuizApp.Services
                     if (!counters.ContainsKey(q.Category)) counters[q.Category] = 1;
                     var idx = counters[q.Category];
                     // Формируем имя файла на основе категории и порядкового номера (используем .jpg)
-                    q.ImageFile = $"{q.Category.ToLower()}_{idx}.jpg";
+                    // Добавляем суффикс 'a' в конец имени, чтобы соответствовать переименованным ресурсам
+                    q.ImageFile = $"{q.Category.ToLower()}_{idx}a.jpg";
                     counters[q.Category] = idx + 1;
                 }
             }

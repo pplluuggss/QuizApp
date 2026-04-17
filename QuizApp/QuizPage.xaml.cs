@@ -141,10 +141,33 @@ public partial class QuizPage : ContentPage
                             Debug.WriteLine($"[QuizPage] Found local image: {localPath}");
                             QuestionImage.Source = Microsoft.Maui.Controls.ImageSource.FromFile(localPath);
                             QuestionImage.IsVisible = true;
+                            ImagePlaceholder.Text = string.Empty;
                             ImagePlaceholder.IsVisible = false;
                             loaded = true;
                             break;
                         }
+                        // Попробуем загрузить как встроенный (MAUI bundled) ресурс через FromFile — иногда это надежнее
+                        try
+                        {
+                            var bundledName = System.IO.Path.GetFileName(name);
+                            Debug.WriteLine($"[QuizPage] Trying ImageSource.FromFile for bundled name: {bundledName}");
+                            var bundledSource = Microsoft.Maui.Controls.ImageSource.FromFile(bundledName);
+                        if (bundledSource != null)
+                        {
+                            QuestionImage.Source = bundledSource;
+                            QuestionImage.IsVisible = true;
+                            ImagePlaceholder.Text = string.Empty;
+                            ImagePlaceholder.IsVisible = false;
+                            loaded = true;
+                            Debug.WriteLine($"[QuizPage] Loaded bundled image via FromFile: {bundledName}");
+                            break;
+                        }
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine($"[QuizPage] FromFile attempt failed for {name}: {ex.Message}");
+                        }
+
 
                         // Затем пробуем открыть ресурс пакета
                         using var stream = await FileSystem.OpenAppPackageFileAsync(name);
@@ -156,6 +179,7 @@ public partial class QuizPage : ContentPage
                             ms.Position = 0;
                             QuestionImage.Source = Microsoft.Maui.Controls.ImageSource.FromStream(() => ms);
                             QuestionImage.IsVisible = true;
+                            ImagePlaceholder.Text = string.Empty;
                             ImagePlaceholder.IsVisible = false;
                             loaded = true;
                             break;
@@ -167,40 +191,6 @@ public partial class QuizPage : ContentPage
                     }
                 }
 
-                if (!loaded)
-                {
-                    // Если реальные изображения не найдены/не упакованы, показываем цветной фон по категории
-                    try
-                    {
-                        var categoryKey = q.Category?.ToLower() ?? "default";
-                        Color bg = categoryKey switch
-                        {
-                            var s when s.StartsWith("movies") => Colors.MediumPurple,
-                            var s when s.StartsWith("series") => Colors.MediumSlateBlue,
-                            var s when s.StartsWith("cartoons") => Colors.Orange,
-                            var s when s.StartsWith("animals") => Colors.LightGreen,
-                            var s when s.StartsWith("nature") => Colors.SeaGreen,
-                            var s when s.StartsWith("geo") => Colors.Teal,
-                            var s when s.StartsWith("history") => Colors.SandyBrown,
-                            var s when s.StartsWith("documentaries") => Colors.SlateGray,
-                            _ => Colors.LightGray
-                        };
-
-                        QuestionImage.Source = null;
-                        QuestionImage.BackgroundColor = bg;
-                        QuestionImage.IsVisible = true;
-                        ImagePlaceholder.Text = $"Нет изображения — категория: {q.Category}";
-                        ImagePlaceholder.IsVisible = true;
-                    }
-                    catch
-                    {
-                        QuestionImage.Source = GetPlaceholderImageSource();
-                        QuestionImage.IsVisible = true;
-                        ImagePlaceholder.Text = $"Не найдено: {q.ImageFile}";
-                        ImagePlaceholder.IsVisible = true;
-                    }
-                    Debug.WriteLine($"[QuizPage] Image not found for {q.ImageFile}. Tried: {string.Join(",", expanded)}");
-                }
             }
             catch
             {

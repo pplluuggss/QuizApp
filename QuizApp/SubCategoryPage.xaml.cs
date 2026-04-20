@@ -24,7 +24,6 @@ namespace QuizApp
                 _ => "Выберите подкатегорию"
             };
 
-            // Для "Кино" показываем: Фильмы, Сериалы, Мультфильмы
             if (_topCategory == "Kino")
             {
                 TopLeftEmoji.Text = "🎬"; TopLeftLabel.Text = "Фильмы"; ((TapGestureRecognizer)TopLeftFrame.GestureRecognizers[0]).CommandParameter = "Movies"; TopLeftFrame.IsVisible = true;
@@ -34,7 +33,6 @@ namespace QuizApp
             }
             else if (_topCategory == "Priroda")
             {
-                // Природа -> Животные, Растения, Экология (используем Animals, Nature_Plants, Nature_Ecology)
                 TopLeftEmoji.Text = "🐾"; TopLeftLabel.Text = "Животные"; ((TapGestureRecognizer)TopLeftFrame.GestureRecognizers[0]).CommandParameter = "Animals"; TopLeftFrame.IsVisible = true;
                 TopRightEmoji.Text = "🌱"; TopRightLabel.Text = "Растения"; ((TapGestureRecognizer)TopRightFrame.GestureRecognizers[0]).CommandParameter = "Nature_Plants"; TopRightFrame.IsVisible = true;
                 BottomLeftEmoji.Text = "🌍"; BottomLeftLabel.Text = "Экология"; ((TapGestureRecognizer)BottomLeftFrame.GestureRecognizers[0]).CommandParameter = "Nature_Ecology"; BottomLeftFrame.IsVisible = true;

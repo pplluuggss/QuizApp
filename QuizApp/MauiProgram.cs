@@ -23,7 +23,6 @@ namespace QuizApp
         builder.Logging.AddDebug();
 #endif
 
-            // Глобальные обработчики необработанных исключений — сохраняем стек в файл, чтобы можно было прочитать позже
             try
             {
                 var crashPath = Path.Combine(FileSystem.AppDataDirectory, "crash.log");

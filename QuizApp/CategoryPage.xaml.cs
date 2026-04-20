@@ -57,7 +57,7 @@ namespace QuizApp
             }
             catch (Exception ex)
             {
-                // Предотвращаем вылет — покажем сообщение
+                // Предотвращаем вылет
                 await DisplayAlertAsync("Ошибка", "Не удалось открыть категорию: " + ex.Message, "ОК");
             }
         }
@@ -67,7 +67,6 @@ namespace QuizApp
         {
             base.OnAppearing();
 
-            // Применяем тему для страницы категорий
             this.BackgroundColor = Application.Current.UserAppTheme == AppTheme.Dark ? (Color)Application.Current.Resources["Gray950"] : (Color)Application.Current.Resources["Gray100"];
         }
 

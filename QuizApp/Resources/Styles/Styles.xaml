@@ -48,7 +48,6 @@
         </Setter>
     </Style>
 
-    <!-- Стиль для иконок/стрелок назад -->
     <Style x:Key="IconButtonStyle" TargetType="ImageButton">
         <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
         <Setter Property="WidthRequest" Value="44" />

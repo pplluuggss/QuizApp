@@ -15,7 +15,6 @@ namespace QuizApp;
 
 public partial class QuizPage : ContentPage
 {
-    // Минимальный встроенный образец (1x1 PNG) в байтах — используется для создания тестовых файлов
     private static readonly byte[] sampleImageBytes = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAAWgmWQ0AAAAASUVORK5CYII=");
 
     private List<Question> _questions; // Список вопросов для выбранной темы
@@ -40,7 +39,6 @@ public partial class QuizPage : ContentPage
             return;
         }
 
-        // Создаём примеры изображений в локальном хранилище, чтобы на устройстве были видны картинки
         try { _ = System.Threading.Tasks.Task.Run(() => EnsureSampleImages()); } catch { }
         DisplayQuestion();
     }
@@ -86,7 +84,6 @@ public partial class QuizPage : ContentPage
     {
         var q = _questions[_currentIndex];
         QuestionLabel.Text = q.Text;
-        // Покажем имя файла изображения для быстрой отладки (пока загружается реальная картинка)
         try
         {
             ImagePlaceholder.Text = q.ImageFile ?? "(no image)";
@@ -102,15 +99,12 @@ public partial class QuizPage : ContentPage
             try
             {
                 var tryNames = new List<string>();
-                // Построим варианты имён: если указано расширение — попробуем его и другие форматы (на случай, если файл создан с другим расширением)
                 var baseName = System.IO.Path.GetFileNameWithoutExtension(q.ImageFile);
                 var originalExt = System.IO.Path.GetExtension(q.ImageFile);
                 var commonExts = new[] { ".png", ".jpg", ".jpeg", ".webp" };
                 if (!string.IsNullOrEmpty(originalExt))
                 {
-                    // сначала добавляем вариант как в данных
                     tryNames.Add(q.ImageFile);
-                    // затем добавляем те же имена с другими расширениями
                     foreach (var ext in commonExts)
                     {
                         var candidate = baseName + ext;
@@ -120,12 +114,10 @@ public partial class QuizPage : ContentPage
                 }
                 else
                 {
-                    // если расширения нет — пробуем все популярные
                     foreach (var ext in commonExts)
                         tryNames.Add(q.ImageFile + ext);
                 }
 
-                // Также пробуем варианты с путями, где обычно лежат ресурсы в MAUI
                 var expanded = tryNames.SelectMany(n => new[] { n, System.IO.Path.Combine("Images", n), System.IO.Path.Combine("Resources", "Images", n) }).ToList();
                 Debug.WriteLine($"[QuizPage] Trying image names: {string.Join(",", expanded)}");
 
@@ -133,7 +125,6 @@ public partial class QuizPage : ContentPage
                 {
                     try
                     {
-                        // Сначала пробуем локальную копию в AppDataDirectory/Images
                         var fileNameOnly = System.IO.Path.GetFileName(name);
                         var localPath = Path.Combine(FileSystem.AppDataDirectory, "Images", fileNameOnly);
                         if (File.Exists(localPath))
@@ -146,7 +137,6 @@ public partial class QuizPage : ContentPage
                             loaded = true;
                             break;
                         }
-                        // Попробуем загрузить как встроенный (MAUI bundled) ресурс через FromFile — иногда это надежнее
                         try
                         {
                             var bundledName = System.IO.Path.GetFileName(name);
@@ -169,11 +159,9 @@ public partial class QuizPage : ContentPage
                         }
 
 
-                        // Затем пробуем открыть ресурс пакета
                         using var stream = await FileSystem.OpenAppPackageFileAsync(name);
                         if (stream != null)
                         {
-                            // Скопируем поток пакета в MemoryStream и используем FromStream — надежно работает на Android/iOS
                             var ms = new MemoryStream();
                             await stream.CopyToAsync(ms);
                             ms.Position = 0;
@@ -187,7 +175,6 @@ public partial class QuizPage : ContentPage
                     }
                     catch
                     {
-                        // если не найден — пробуем следующий вариант
                     }
                 }
 
@@ -203,7 +190,6 @@ public partial class QuizPage : ContentPage
         }
         else
         {
-            // Нет имени файла у вопроса — показываем плейсхолдер и текст
             QuestionImage.Source = GetPlaceholderImageSource();
             QuestionImage.IsVisible = true;
             ImagePlaceholder.Text = "Без изображения для этого вопроса";
@@ -244,7 +230,6 @@ public partial class QuizPage : ContentPage
         CancelTimer();
         StartTimer();
     }
-    // Простая анимация: масштаб и возврат
     private async System.Threading.Tasks.Task AnimateButtonAsync(Button btn, bool correct)
     {
         
@@ -259,7 +244,6 @@ public partial class QuizPage : ContentPage
         }
     }
 
-    // Небольшой встроенный плейсхолдер (1x1 PNG, серый) для показа, если реальных картинок нет
     private static ImageSource GetPlaceholderImageSource()
     {
         try
@@ -274,7 +258,6 @@ public partial class QuizPage : ContentPage
         }
     }
 
-    // Создаём простые примерные изображения (мини PNG) для категорий в AppDataDirectory/Images
     private void EnsureSampleImages()
     {
         try
@@ -282,7 +265,6 @@ public partial class QuizPage : ContentPage
             var dir = Path.Combine(FileSystem.AppDataDirectory, "Images");
             Directory.CreateDirectory(dir);
 
-            // Получим список категорий и количество вопросов в каждой, чтобы создать соответствующие файлы .jpg
             try
             {
                 var all = QuizApp.Services.QuizService.GetQuestions();
@@ -311,7 +293,6 @@ public partial class QuizPage : ContentPage
             }
             catch
             {
-                // fallback: создадим несколько общих jpg
                 var sampleNames = new[] { "movies_1.jpg", "series_1.jpg", "cartoons_1.jpg", "animals_1.jpg", "nature_plants_1.jpg", "nature_ecology_1.jpg" };
                 foreach (var name in sampleNames)
                 {
@@ -459,10 +440,9 @@ public partial class QuizPage : ContentPage
     private void OnSkipClicked(object sender, EventArgs e)
     {
         if (_isInputLocked) return;
-        // Пропустить вопрос — засчитать как правильный ответ, не снимать жизни
+        // Пропустить вопрос 
         if (_skipUsed) return;
         _score++;
-        // Использование пропуска также закрывает подсказку "пропустить" для этого раунда
         _skipUsed = true;
         UpdateHintsUI();
         CancelTimer();
@@ -498,7 +478,7 @@ public partial class QuizPage : ContentPage
             return;
         }
 
-        // Конец викторины — показать результаты и вариант действий
+        // Конец викторины 
         string result = $"Вы набрали {_score} из {_questions.Count}";
         var action = await DisplayActionSheet("Викторина завершена", "В меню", "Начать заново", result);
 

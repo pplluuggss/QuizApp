@@ -10,8 +10,6 @@ namespace QuizApp
         public App()
         {
             InitializeComponent();
-
-            // Если есть файл crash.log от предыдущего запуска — прочитаем и удалим его, потом покажем в CreateWindow
             try
             {
                 var path = System.IO.Path.Combine(FileSystem.AppDataDirectory, "crash.log");
@@ -22,7 +20,6 @@ namespace QuizApp
                 }
             }
             catch { }
-            // Применяем сохранённую тему пользователя (если есть)
             try
             {
                 var userTheme = Preferences.Get("UserTheme", "Light");
@@ -33,16 +30,13 @@ namespace QuizApp
             }
             catch
             {
-                // Игнорируем ошибки при чтении настроек
             }
-            // При старте приложения очищаем метки о пройденных категориях
             try
             {
                 Preferences.Remove("Completed_Animals");
                 Preferences.Remove("Completed_Movies");
                 Preferences.Remove("Completed_Cartoons");
                 Preferences.Remove("Completed_Series");
-                // Сбрасываем сохранённые счёты правильных ответов
                 Preferences.Set("Score_Animals_Correct", 0);
                 Preferences.Set("Score_Movies_Correct", 0);
                 Preferences.Set("Score_Cartoons_Correct", 0);
@@ -50,7 +44,6 @@ namespace QuizApp
             }
             catch
             {
-                // Игнорируем ошибки при очистке настроек
             }
         }
 
@@ -60,7 +53,6 @@ namespace QuizApp
 
             if (!string.IsNullOrEmpty(_startupCrashText))
             {
-                // Показываем короткую часть лога, чтобы не перегружать UI
                 var text = _startupCrashText.Length > 2000 ? _startupCrashText.Substring(0, 2000) : _startupCrashText;
                 window.Page.Dispatcher.Dispatch(async () =>
                 {
